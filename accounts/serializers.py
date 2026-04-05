@@ -33,3 +33,4 @@ class SmartVoteTokenSerializer(TokenObtainPairSerializer):
         token['full_name']  = user.full_name
         token['student_id'] = user.student_id
         return token
+    
