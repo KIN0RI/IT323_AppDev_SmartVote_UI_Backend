@@ -5,14 +5,14 @@ from django.conf import settings
 class ElectionSettings(models.Model):
     STATUS_CHOICES = [('open', 'Open'), ('closed', 'Closed'), ('upcoming', 'Upcoming')]
 
-    title                   = models.CharField(max_length=200, default='USTP Student Council Election')
-    start_date              = models.DateTimeField()
-    end_date                = models.DateTimeField()
-    status                  = models.CharField(max_length=10, choices=STATUS_CHOICES, default='upcoming')
-    allow_multiple_votes    = models.BooleanField(default=False)
+    title                     = models.CharField(max_length=200, default='USTP Student Council Election')
+    start_date                = models.DateTimeField()
+    end_date                  = models.DateTimeField()
+    status                    = models.CharField(max_length=10, choices=STATUS_CHOICES, default='upcoming')
+    allow_multiple_votes      = models.BooleanField(default=False)
     require_face_verification = models.BooleanField(default=True)
-    created_at              = models.DateTimeField(auto_now_add=True)
-    updated_at              = models.DateTimeField(auto_now=True)
+    created_at                = models.DateTimeField(auto_now_add=True)
+    updated_at                = models.DateTimeField(auto_now=True)
 
     class Meta:
         verbose_name_plural = 'Election Settings'
@@ -62,7 +62,6 @@ class Vote(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        
         unique_together = ('voter', 'position')
         ordering = ['-timestamp']
 

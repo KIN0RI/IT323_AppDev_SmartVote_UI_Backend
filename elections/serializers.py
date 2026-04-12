@@ -8,7 +8,7 @@ User = get_user_model()
 class ElectionSettingsSerializer(serializers.ModelSerializer):
     class Meta:
         model  = ElectionSettings
-        fields = '_all_'
+        fields = '__all__'
 
 
 class CandidateSerializer(serializers.ModelSerializer):

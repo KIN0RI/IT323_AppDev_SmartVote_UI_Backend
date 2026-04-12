@@ -22,17 +22,17 @@ class VoterManager(BaseUserManager):
 class Voter(AbstractBaseUser, PermissionsMixin):
     ROLE_CHOICES = [('student', 'Student'), ('admin', 'Admin')]
 
-    student_id  = models.CharField(max_length=20, unique=True, verbose_name='Username') 
-    email       = models.EmailField(unique=True)
-    full_name   = models.CharField(max_length=150)
-    course      = models.CharField(max_length=100, blank=True, default='')
-    year_level  = models.CharField(max_length=20, blank=True, default='')
-    role        = models.CharField(max_length=10, choices=ROLE_CHOICES, default='student')
-    has_voted   = models.BooleanField(default=False)
+    student_id    = models.CharField(max_length=20, unique=True, verbose_name='Username')
+    email         = models.EmailField(unique=True)
+    full_name     = models.CharField(max_length=150)
+    course        = models.CharField(max_length=100, blank=True, default='')
+    year_level    = models.CharField(max_length=20, blank=True, default='')
+    role          = models.CharField(max_length=10, choices=ROLE_CHOICES, default='student')
+    has_voted     = models.BooleanField(default=False)
     face_verified = models.BooleanField(default=False)
-    date_joined = models.DateTimeField(auto_now_add=True)
-    is_active   = models.BooleanField(default=True)
-    is_staff    = models.BooleanField(default=False)
+    date_joined   = models.DateTimeField(auto_now_add=True)
+    is_active     = models.BooleanField(default=True)
+    is_staff      = models.BooleanField(default=False)
 
     objects = VoterManager()
 
