@@ -73,3 +73,40 @@ def profile(request):
         serializer.save()
         return Response(serializer.data)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def login_with_email(request):
+    """POST /api/auth/login-email/  — login using email + password"""
+    from django.contrib.auth import authenticate
+    from elections.models import VoterLog  
+
+    email    = request.data.get('email', '').strip()
+    password = request.data.get('password', '')
+
+    try:
+        user = get_user_model().objects.get(email=email)
+    except get_user_model().DoesNotExist:
+        return Response({'detail': 'Invalid email or password.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    user = authenticate(request, username=user.student_id, password=password)
+    if user is None:
+        return Response({'detail': 'Invalid email or password.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    ip = x_forwarded_for.split(',')[0] if x_forwarded_for else request.META.get('REMOTE_ADDR')
+    VoterLog.objects.create(voter=user, ip_address=ip)
+
+    refresh = RefreshToken.for_user(user)
+    refresh['role']       = user.role
+    refresh['full_name']  = user.full_name
+    refresh['student_id'] = user.student_id
+
+    return Response({
+        'access':     str(refresh.access_token),
+        'refresh':    str(refresh),
+        'role':       user.role,
+        'full_name':  user.full_name,
+        'student_id': user.student_id,
+    })

@@ -4,7 +4,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
 
-from .models import Candidate, Vote, ElectionSettings, VoterLog
+from .models import Candidate, Vote, ElectionSettings
 from .serializers import (
     CandidateSerializer, VoteSerializer, ElectionSettingsSerializer,
     VoterLogSerializer
@@ -147,7 +147,7 @@ def dashboard_stats(request):
     })
 
 
-# ── Voter Log ─────────────────────────────────────────────────────────────────
+
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -156,19 +156,21 @@ def voter_log(request):
     if request.user.role != 'admin' and not request.user.is_staff:
         return Response({'error': 'Admin access required.'}, status=status.HTTP_403_FORBIDDEN)
 
-    logs          = VoterLog.objects.select_related('voter').all()
+    
+    students      = User.objects.filter(role='student')
     search        = request.query_params.get('search', '')
     status_filter = request.query_params.get('status', 'All')
 
     if search:
-        logs = logs.filter(voter__full_name__icontains=search) | \
-               logs.filter(voter__student_id__icontains=search)
+        students = students.filter(full_name__icontains=search) | \
+                   students.filter(student_id__icontains=search)
     if status_filter == 'Voted':
-        logs = logs.filter(voter__has_voted=True)
+        students = students.filter(has_voted=True)
     elif status_filter == 'Pending':
-        logs = logs.filter(voter__has_voted=False)
+        students = students.filter(has_voted=False)
 
-    serializer = VoterLogSerializer(logs, many=True)
+    from .serializers import StudentVoterLogSerializer
+    serializer = StudentVoterLogSerializer(students, many=True)
     return Response(serializer.data)
 
 
@@ -203,4 +205,32 @@ def election_settings(request):
     if serializer.is_valid():
         serializer.save()
         return Response(serializer.data)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def cast_vote(request):
+    """POST /api/vote/"""
+    if request.user.role == 'admin':
+        return Response({'error': 'Admins cannot vote.'}, status=status.HTTP_403_FORBIDDEN)
+
+    
+    try:
+        election = ElectionSettings.objects.latest('created_at')
+        if election.status != 'open':
+            return Response(
+                {'detail': 'Election is currently closed.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+    except ElectionSettings.DoesNotExist:
+        pass
+
+    serializer = VoteSerializer(data=request.data, context={'request': request})
+    if serializer.is_valid():
+        vote = serializer.save()
+        return Response(
+            {'message': f'Vote cast for {vote.candidate.name} ({vote.position}).'},
+            status=status.HTTP_201_CREATED
+        )
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

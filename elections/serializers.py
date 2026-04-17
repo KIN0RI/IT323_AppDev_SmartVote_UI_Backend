@@ -34,7 +34,7 @@ class VoteSerializer(serializers.ModelSerializer):
         voter     = self.context['request'].user
         candidate = data['candidate']
 
-        # Block double-voting per position
+       
         if Vote.objects.filter(voter=voter, position=candidate.position).exists():
             raise serializers.ValidationError(
                 f'You have already voted for {candidate.position}.'
@@ -48,7 +48,7 @@ class VoteSerializer(serializers.ModelSerializer):
             candidate=validated_data['candidate'],
             position=validated_data['candidate'].position,
         )
-        # Mark voter as having voted once all positions covered
+        
         positions_count   = Candidate.objects.values('position').distinct().count()
         votes_cast        = Vote.objects.filter(voter=voter).count()
         if votes_cast >= positions_count:
@@ -69,6 +69,27 @@ class VoterLogSerializer(serializers.ModelSerializer):
 
     def get_status(self, obj):
         return 'Voted' if obj.voter.has_voted else 'Pending'
+
+
+class StudentVoterLogSerializer(serializers.ModelSerializer):
+    """Serializer for the voter log — queries students directly so Pending
+    students (who may never have triggered a VoterLog entry) are included,
+    and admin accounts are excluded."""
+    name       = serializers.CharField(source='full_name',  read_only=True)
+    status     = serializers.SerializerMethodField()
+    login_time = serializers.SerializerMethodField()
+
+    class Meta:
+        model  = User
+        fields = ['id', 'name', 'student_id', 'email', 'login_time', 'status']
+
+    def get_status(self, obj):
+        return 'Voted' if obj.has_voted else 'Pending'
+
+    def get_login_time(self, obj):
+        
+        log = obj.logs.order_by('-login_time').first()
+        return log.login_time.isoformat() if log else None
 
 
 class DashboardStatsSerializer(serializers.Serializer):
